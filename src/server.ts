@@ -1,38 +1,16 @@
-import { PrismaClient } from "@prisma/client";
-import express from "express";
-import { z } from "zod";
+import express from 'express';
 
-import "dotenv/config";
+import 'dotenv/config';
+import eventRouter from './routes/eventRoutes.js';
 
 const app = express();
+const PORT = 3000;
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const prisma = new PrismaClient({
-  log: ["query"],
-});
+app.use('/api/events', eventRouter);
 
-app.post("/events", async function (req, res) {
-  // schema de valição
-  const createEventSchema = z.object({
-    title: z.string().min(4),
-    details: z.string().nullable(),
-    maximumAttendees: z.number().int().positive().nullable(),
-  });
-
-  // validando o body da request
-  const data = createEventSchema.parse(req.body);
-
-  const event = await prisma.event.create({
-    data: {
-      ...data,
-      slug: new Date().toISOString(),
-    },
-  });
-
-  res.status(201).json({ eventId: event.id });
-});
-
-app.listen(3000, () => {
-  console.log("Server running");
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

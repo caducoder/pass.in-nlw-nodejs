@@ -31,10 +31,9 @@ eventRouter.post('/', async function (req, res) {
   });
 
   if (eventWithSameSlug !== null) {
-    res
+    return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: 'Another event with same title already exists.' });
-    return;
   }
 
   const event = await prisma.event.create({
@@ -46,7 +45,7 @@ eventRouter.post('/', async function (req, res) {
     },
   });
 
-  res.status(StatusCodes.CREATED).json({ eventId: event.id });
+  return res.status(StatusCodes.CREATED).json({ eventId: event.id });
 });
 
 eventRouter.post('/:eventId/attendees', async function (req, res) {
@@ -75,10 +74,9 @@ eventRouter.post('/:eventId/attendees', async function (req, res) {
   });
 
   if (attendeeFromEmail !== null) {
-    res
+    return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: 'This e-mail is already registered for this event' });
-    return;
   }
 
   const [event, eventsAttendeeNumber] = await Promise.all([
@@ -98,10 +96,9 @@ eventRouter.post('/:eventId/attendees', async function (req, res) {
     event?.maximumAttendees &&
     eventsAttendeeNumber >= event.maximumAttendees
   ) {
-    res.status(StatusCodes.BAD_REQUEST).json({
+    return res.status(StatusCodes.BAD_REQUEST).json({
       error: 'This event has reached the maximum amount of attendees.',
     });
-    return;
   }
 
   const attendee = await prisma.attendee.create({
@@ -113,6 +110,41 @@ eventRouter.post('/:eventId/attendees', async function (req, res) {
   });
 
   return res.status(StatusCodes.CREATED).json({ attendeeId: attendee.id });
+});
+
+eventRouter.get('/:eventId', async function (req, res) {
+  const eventSchema = z.object({
+    params: z.object({
+      eventId: z.string().uuid(),
+    }),
+  });
+
+  const {
+    params: { eventId },
+  } = await zParse(eventSchema, req, res);
+
+  const event = await prisma.event.findUnique({
+    where: {
+      id: eventId,
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      details: true,
+      _count: {
+        select: { Attendee: true },
+      },
+    },
+  });
+
+  if (event == null) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: 'Event not found' });
+  }
+
+  return res.status(StatusCodes.OK).json({ event });
 });
 
 export default eventRouter;

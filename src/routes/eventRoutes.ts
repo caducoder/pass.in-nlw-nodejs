@@ -65,6 +65,45 @@ eventRouter.post('/:eventId/attendees', async function (req, res) {
     params: { eventId },
   } = await zParse(registerAttendeeEventSchema, req, res);
 
+  const attendeeFromEmail = await prisma.attendee.findUnique({
+    where: {
+      eventId_email: {
+        email,
+        eventId,
+      },
+    },
+  });
+
+  if (attendeeFromEmail !== null) {
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: 'This e-mail is already registered for this event' });
+    return;
+  }
+
+  const [event, eventsAttendeeNumber] = await Promise.all([
+    prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    }),
+    prisma.attendee.count({
+      where: {
+        eventId,
+      },
+    }),
+  ]);
+
+  if (
+    event?.maximumAttendees &&
+    eventsAttendeeNumber >= event.maximumAttendees
+  ) {
+    res.status(StatusCodes.BAD_REQUEST).json({
+      error: 'This event has reached the maximum amount of attendees.',
+    });
+    return;
+  }
+
   const attendee = await prisma.attendee.create({
     data: {
       name,

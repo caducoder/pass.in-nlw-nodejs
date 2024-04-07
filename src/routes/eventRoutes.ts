@@ -147,4 +147,49 @@ eventRouter.get('/:eventId', async function (req, res) {
   return res.status(StatusCodes.OK).json({ event });
 });
 
+eventRouter.get('/:eventId/attendees', async function (req, res) {
+  const schema = z.object({
+    params: z.object({
+      eventId: z.string().uuid(),
+    }),
+    query: z.object({
+      q: z.string().nullish(),
+      pageIndex: z.string().nullish().default('0').transform(Number),
+    }),
+  });
+
+  const {
+    params: { eventId },
+    query: { pageIndex, q },
+  } = await zParse(schema, req, res);
+
+  const attendees = await prisma.attendee.findMany({
+    where: q
+      ? {
+          eventId,
+          name: {
+            contains: q,
+          },
+        }
+      : {
+          eventId,
+        },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      checkIn: {
+        select: { createdAt: true },
+      },
+    },
+    take: 10,
+    skip: pageIndex * 10,
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return res.status(StatusCodes.OK).json({ attendees });
+});
 export default eventRouter;

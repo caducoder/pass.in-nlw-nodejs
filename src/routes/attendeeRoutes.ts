@@ -35,7 +35,53 @@ attendeeRouter.get('/:attendeeId/badge', async function (req, res) {
       .status(StatusCodes.NOT_FOUND)
       .json({ error: 'Attendee not found' });
   }
-  return res.status(StatusCodes.OK).json({ attendee });
+
+  const baseURL = `${req.protocol}://${req.header('Host')}`;
+
+  const checkInUrl = new URL(
+    `/api/attendees/${attendeeId}/check-in`,
+    baseURL
+  );
+
+  return res.status(StatusCodes.OK).json({
+    badge: {
+      name: attendee.name,
+      email: attendee.email,
+      eventTitle: attendee.event.title,
+      checkInUrl: checkInUrl.toString(),
+    },
+  });
 });
 
+attendeeRouter.get('/:attendeeId/check-in', async function (req, res) {
+  const schema = z.object({
+    params: z.object({
+      attendeeId: z.coerce.number(),
+    }),
+  });
+
+  const {
+    params: { attendeeId },
+  } = await zParse(schema, req, res);
+
+  const attendeeCheckIn = await prisma.checkIn.findUnique({
+    where: {
+      attendeeId,
+    },
+  });
+
+  if (attendeeCheckIn !== null) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: 'Attendee already checked in!' });
+  }
+
+  await prisma.checkIn.create({
+    data: {
+      attendeeId,
+    },
+  });
+
+  return res.status(StatusCodes.CREATED).send();
+});
 export default attendeeRouter;

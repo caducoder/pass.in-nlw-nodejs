@@ -2,10 +2,15 @@ import express from 'express';
 import attendeeRouter from './routes/attendeeRoutes.js';
 import eventRouter from './routes/eventRoutes.js';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerFile from './swagger-output.json';
+
 import 'dotenv/config';
 
 const app = express();
 const PORT = 3000;
+
+app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

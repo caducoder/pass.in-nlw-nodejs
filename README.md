@@ -7,3 +7,7 @@ Backend da aplicação pass.in construída durante o evento NLW Unite da Rockets
 **Back-end**: Node, Express, Typescript.
 
 **Banco de dados**: SQLite
+
+## TO-DO
+
+&#9744; Adicionar o handler de erros

@@ -7,12 +7,13 @@
     "lib": ["es2023"],
     "module": "node16",
     "target": "es2022",
-
+    "types": ["node", "jest"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node16",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "outDir": "./dist"
   },
   "include": ["src"]
 }
